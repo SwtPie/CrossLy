@@ -92,18 +92,20 @@ Auto-generated charts:
 
 ---
 
-## 3. Data model (draft)
+## 3. Data model
 
-- `event(id, name, date, location, created_at)`
-- `participant(id, event_id, last_name, first_name, sex, class, establishment, birth_date_or_age, vma, bib)`
-  - unique key for duplicates: `(event_id, last_name, first_name)` (normalized, case/accents insensitive)
-  - `bib` unique per event
-- `race(id, event_id, name, distance_m, vma_min, vma_max, status, started_at, hidden)`
-- `race_entry(id, race_id, participant_id, status)`  -- status: `registered | DNS | DNF | DSQ | finished`
-- `arrival(id, race_id, position, elapsed_ms, participant_id NULL until bib is entered)`
-  - `elapsed_ms` is computed from a monotonic clock stored with the persisted start timestamp
+One SQLite file per event, so there is no `event` table and no `event_id` column: the file *is* the event. Schema versions are tracked with `PRAGMA user_version` and defined in `backend/migrations.py` (append a new migration, never edit a released one).
 
-To be refined when phase 1 starts.
+- `meta(key, value)`: event `name`, `date` (ISO), `location`.
+- `participant(id, last_name, first_name, last_name_key, first_name_key, sex, class, establishment, birth_date, age, vma, bib, created_at)`
+  - `*_key` columns hold the normalized (casefolded, accent-free) names; unique on `(last_name_key, first_name_key)` for duplicate detection.
+  - `bib` unique, NULL until assigned. `vma` NULL when unknown. `sex` is `M`, `F` or NULL.
+- `race(id, name, distance_m, vma_min, vma_max, hidden, timer_status, started_at_ms, paused_at_ms, paused_total_ms, created_at)`
+  - `timer_status`: `idle | running | paused | finished`. Timestamps are wall-clock epoch milliseconds, persisted so the stopwatch survives a crash.
+- `race_entry(id, race_id, participant_id, status)`: status `registered | finished | DNS | DNF | DSQ`; unique per `(race_id, participant_id)`.
+- `arrival(id, race_id, position, elapsed_ms, participant_id)`
+  - `participant_id` is NULL until the bib is entered; unique per `(race_id, position)`, and a participant can finish only once per race.
+  - Deleting a participant keeps the arrival (time and position) and sets `participant_id` back to NULL.
 
 ---
 
@@ -134,11 +136,12 @@ crossly/
 
 Each phase ends with something usable and manually verified.
 
-**Phase 0 - Foundations**
+**Phase 0 - Foundations** (done, validated)
 App skeleton: pywebview window, Python backend bridge, SQLite schema + migrations, navigation shell, local-assets-only frontend. PyInstaller packaging is **not** a priority here: it is deferred to phase 9. Keep the code packaging-friendly anyway (no data files read from the source tree except through `backend/paths.py`, migrations stored as Python strings).
 
-**Phase 1 - Events**
+**Phase 1 - Events** (implemented, awaiting validation)
 Create / edit / delete events, event selection screen, event export / import (backup and transfer).
+Notes: export uses the SQLite backup API (consistent single file, even in WAL mode) through a native save dialog; import validates and migrates the file in a temporary location, then stores it under a fresh file name (so importing the same backup twice creates two events). Renaming an event changes its name, not its file name. Deleting asks for confirmation and removes the file. Messages the backend shows to the user are French and live in `backend/messages.py`.
 
 **Phase 2 - Participants**
 Manual add / edit / delete, search and filters, automatic and manual bib assignment.

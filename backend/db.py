@@ -101,15 +101,19 @@ def create_event_file(name: str, date: str = "", location: str = "") -> str:
 
 
 def read_event_meta(path: Path) -> dict:
-    """Read name, date and location from an event file."""
+    """Read name, date, location and content counts from an event file."""
     with connect(path) as conn:
         rows = conn.execute("SELECT key, value FROM meta").fetchall()
+        participants = conn.execute("SELECT COUNT(*) FROM participant").fetchone()[0]
+        races = conn.execute("SELECT COUNT(*) FROM race").fetchone()[0]
     meta = {row["key"]: row["value"] for row in rows}
     return {
         "file": path.name,
         "name": meta.get("name", path.stem),
         "date": meta.get("date", ""),
         "location": meta.get("location", ""),
+        "participants": participants,
+        "races": races,
     }
 
 

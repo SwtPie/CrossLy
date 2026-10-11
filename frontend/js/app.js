@@ -1,14 +1,13 @@
-// Navigation shell: builds the sidebar and switches screens.
+// Navigation shell: sidebar, screen switching and the currently open event.
 window.CrossLy = window.CrossLy || {};
 
 (function () {
   const { h, setTitle, toast } = CrossLy.ui;
   const S = CrossLy.strings;
 
-  // Order of the sidebar. Screens other than "events" need a selected event
-  // (selection arrives in phase 1), so they stay disabled until then.
+  // Order of the sidebar. Every screen except "events" needs an open event.
   const SCREENS = ["events", "participants", "races", "timing", "results", "stats"];
-  const state = { current: "events", eventFile: null };
+  const state = { current: "events", eventFile: null, event: null };
   CrossLy.state = state;
 
   function buildNav() {
@@ -19,6 +18,7 @@ window.CrossLy = window.CrossLy || {};
           "button",
           {
             "data-screen": key,
+            class: key === state.current ? "active" : false,
             disabled: key !== "events" && !state.eventFile,
             onclick: () => show(key),
           },
@@ -28,7 +28,23 @@ window.CrossLy = window.CrossLy || {};
     );
   }
 
+  function updateBadge() {
+    const badge = document.getElementById("event-badge");
+    badge.hidden = !state.event;
+    badge.textContent = state.event ? state.event.name : "";
+  }
+
+  // Select the open event (an event summary from the backend), or null to close it.
+  function setEvent(event) {
+    state.event = event || null;
+    state.eventFile = event ? event.file : null;
+    updateBadge();
+    buildNav();
+  }
+
   async function show(key) {
+    // Screens that depend on an event fall back to the events list without one.
+    if (key !== "events" && !state.eventFile) key = "events";
     state.current = key;
     for (const btn of document.querySelectorAll("#nav button")) {
       btn.classList.toggle("active", btn.dataset.screen === key);
@@ -40,6 +56,8 @@ window.CrossLy = window.CrossLy || {};
       toast(err.message || S.errors.generic, true);
     }
   }
+
+  CrossLy.app = { show, setEvent };
 
   async function init() {
     buildNav();
