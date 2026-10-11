@@ -69,7 +69,7 @@ Constraints:
   - `speed = distance_km / time_h`
   - `vma_percent = speed / vma * 100`
 - Podium view for the top 3.
-- **Filtered rankings** by condition: sex, establishment, class, etc. (combinable).
+- **Filtered rankings** by condition: sex, establishment, class and age category (combinable).
 - Special statuses: **DNF** (did not finish), **DNS** (did not start), **DSQ** (disqualified). They are listed after the ranked finishers and have no rank.
 - **No ties**: positions come from the arrival order, every finisher has a unique rank.
 - Post-race correction: add, delete or edit arrivals at any time; rankings update instantly.
@@ -178,9 +178,11 @@ Decided:
 - PDF engine: ReportLab.
 - Data location: `data/` folder next to the executable.
 - Bib customization: fields, size, logo, bibs per page; export by establishment and by class.
-- Database layout: **one SQLite file per event** (races live inside their event's file, not in a separate database, to keep foreign keys and joins simple and make backup a single file copy). To be confirmed with the project owner.
+- Database layout: **one SQLite file per event** (confirmed). Races live inside their event's file. At startup the app lists events by scanning `data/`, reading name and date stored in each file.
+- Ranking / quick-add filters: sex, establishment, class, age category.
+- Class naming: applies to **all levels** (`6X`, `5X`, `4X`, `3X`): level digit followed by a section character, where `X` is a letter `A-Z` or a digit `1-9` (e.g. `6A`, `63`). Normalize on import (trim, uppercase, remove spaces / separators such as `6 A`, `6e A`, `6eme3`).
+- Class fallback on import: if a value does not match the pattern, keep the raw string found in the column detected as "class" (no rejection). The user can also **set the class manually during import** (per row or for the whole list, like the establishment field).
+- Age categories: **deferred**. The data model keeps birth date / age so categories can be added later; the age-category filter is implemented once the definition is decided.
 
 Still open:
-- Filter fields available for rankings (sex, establishment, class only, or also VMA bracket / age category)?
-- How the app lists existing events at startup (scan the `data/` folder, with name and date stored in each file)?
-- Official class/level naming to support in the import template?
+- Age category definition (names, boundaries, computed from birth year or age at event date). To decide later.
