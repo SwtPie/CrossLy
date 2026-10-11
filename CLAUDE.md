@@ -18,7 +18,7 @@ Desktop software to help PE teachers organize a school cross-country event: part
 | Frontend | HTML / CSS / vanilla JavaScript (no build step, no framework unless decided later) |
 | Database | **SQLite** (one `.db` file per installation, or per event export, see section 6) |
 | Excel read / write | **openpyxl** |
-| PDF generation | To decide (see Open questions): ReportLab or HTML-to-PDF via the webview print engine |
+| PDF generation | **ReportLab** (precise layout for bibs and results) |
 | Packaging | **PyInstaller** (one-file `.exe`, Windows only) |
 
 Constraints:
@@ -33,7 +33,8 @@ Constraints:
 - Independent events (one per date, school or competition).
 - Each event has its own participants, races and results.
 - Create, edit, delete at any time.
-- **Backup / transfer**: export an event to a file and import it on another machine (SQLite file or JSON export).
+- **Storage**: one SQLite file per event, stored in a `data/` folder **next to the executable**. Participants, races, arrivals and results of an event all live in that same file (see section 3).
+- **Backup / transfer**: since an event is a single file, backup = copy the file; import = pick a file. The app also offers export / import buttons that do this.
 
 ### 2.2 Participants
 - Manual individual add.
@@ -81,7 +82,11 @@ Auto-generated charts:
 - Participants by VMA bracket: **0.5 km/h wide brackets**, arithmetic rounding to the nearest 0.5.
 
 ### 2.7 Printing and PDF export (high priority)
-- **Bibs (dossards)**: PDF export for later printing, selectable **by class** and **by establishment**, with **customization before printing** (layout, text, logo, size, etc.).
+- **Bibs (dossards)**: PDF export for later printing, selectable **by establishment** and **by class** (one PDF for the whole selection, or one PDF per establishment / per class), with **customization before printing**:
+  - fields shown (bib number, last name, first name, class, establishment, race, etc.)
+  - bib size
+  - logo (image upload)
+  - number of bibs per page
 - **Results**: PDF export of rankings (general or filtered), also customizable.
 - Other exports (start lists, Excel/CSV results) are nice-to-have, see roadmap.
 
@@ -169,10 +174,13 @@ Excel / CSV export of results, start lists, diplomas, team (establishment) ranki
 
 ## 6. Open questions
 
-- PDF engine: ReportLab (precise layout, extra dependency) vs HTML print (simpler, depends on webview rendering)?
-- Event backup format: raw SQLite file copy vs JSON export?
-- Single database for all events, or one database file per event?
-- Exact bib customization options (fields, size, logo, number of bibs per page)?
-- Exact filter fields available for rankings (sex, establishment, class only, or also VMA bracket / age category)?
-- Where is the data file stored (next to the exe, or in the user's AppData)?
+Decided:
+- PDF engine: ReportLab.
+- Data location: `data/` folder next to the executable.
+- Bib customization: fields, size, logo, bibs per page; export by establishment and by class.
+- Database layout: **one SQLite file per event** (races live inside their event's file, not in a separate database, to keep foreign keys and joins simple and make backup a single file copy). To be confirmed with the project owner.
+
+Still open:
+- Filter fields available for rankings (sex, establishment, class only, or also VMA bracket / age category)?
+- How the app lists existing events at startup (scan the `data/` folder, with name and date stored in each file)?
 - Official class/level naming to support in the import template?
