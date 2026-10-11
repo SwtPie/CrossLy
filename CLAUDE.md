@@ -135,7 +135,7 @@ crossly/
 Each phase ends with something usable and manually verified.
 
 **Phase 0 - Foundations**
-App skeleton: pywebview window, Python backend bridge, SQLite schema + migrations, navigation shell, local-assets-only frontend. Verify it also runs once packaged with PyInstaller (do this early to avoid late surprises).
+App skeleton: pywebview window, Python backend bridge, SQLite schema + migrations, navigation shell, local-assets-only frontend. PyInstaller packaging is **not** a priority here: it is deferred to phase 9. Keep the code packaging-friendly anyway (no data files read from the source tree except through `backend/paths.py`, migrations stored as Python strings).
 
 **Phase 1 - Events**
 Create / edit / delete events, event selection screen, event export / import (backup and transfer).

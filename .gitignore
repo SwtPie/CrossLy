@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+build/
+dist/
+*.spec
+
+# Event databases are user data, never committed
+data/*.db
+data/*.db-wal
+data/*.db-shm
