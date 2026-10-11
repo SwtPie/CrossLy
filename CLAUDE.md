@@ -1,0 +1,178 @@
+# CrossLy
+
+Desktop software to help PE teachers organize a school cross-country event: participant registration, race management, live timing, rankings and printable documents (bibs, results).
+
+- Runs fully **offline**: no internet, no user account, no dependency to install.
+- Delivered as a **single Windows executable** (double-click to start).
+- Single main PC, data stored in a **local SQLite file**.
+- **UI language: French** (labels, messages, exported documents). **Code, comments, identifiers, commit messages: English.**
+
+---
+
+## 1. Tech stack
+
+| Layer | Choice |
+|---|---|
+| Window / shell | **pywebview** (native window embedding the web UI) |
+| Backend | Python 3, exposed to the frontend through pywebview's JS API (`window.pywebview.api`) |
+| Frontend | HTML / CSS / vanilla JavaScript (no build step, no framework unless decided later) |
+| Database | **SQLite** (one `.db` file per installation, or per event export, see section 6) |
+| Excel read / write | **openpyxl** |
+| PDF generation | To decide (see Open questions): ReportLab or HTML-to-PDF via the webview print engine |
+| Packaging | **PyInstaller** (one-file `.exe`, Windows only) |
+
+Constraints:
+- Everything must work offline: bundle all JS/CSS/fonts locally, no CDN.
+- No test framework required: **manual verification** only. Keep logic in small pure functions (import normalization, ranking, VMA percentage) so it stays easy to check by hand.
+
+---
+
+## 2. Functional documentation
+
+### 2.1 Events
+- Independent events (one per date, school or competition).
+- Each event has its own participants, races and results.
+- Create, edit, delete at any time.
+- **Backup / transfer**: export an event to a file and import it on another machine (SQLite file or JSON export).
+
+### 2.2 Participants
+- Manual individual add.
+- Import from **CSV or Excel (.xlsx)**:
+  - Downloadable **template** file to fill in.
+  - Otherwise, flexible **column detection** for arbitrary files (spelling, language, case): last name, first name, sex, class, age / birth date, VMA, etc.
+  - **Preview** before validation.
+  - **Duplicate detection** on **last name + first name**.
+  - **Name normalization** (fix all-uppercase exports from Pronote).
+  - **Establishment field** applied to a whole imported list in one operation.
+  - Participants **without VMA** are imported as-is (VMA stays empty, nothing is inferred).
+- Bib numbers: automatic assignment in one click, or manual.
+- Real-time search and filtering.
+
+### 2.3 Races
+- Unlimited number of races per event.
+- A race is defined mainly by its **distance**. The VMA range is **informative only** (it does not restrict who can be registered).
+- Registration is unlimited (a participant may be added to several races).
+- **Quick add** by combined filters: sex, VMA, class, establishment.
+- Individual add with search.
+
+### 2.4 Live timing
+- Built-in stopwatch: start, pause, resume, finish.
+- One-click **arrival recording** (timestamped), with undo in case of mistake.
+- **Bib entry is decoupled from time recording**: arrivals are recorded first as an ordered list of times; bibs are filled in afterwards.
+- Bib entry flow: for each finishing position, type the bib number; the app finds the matching participant and shows their name for confirmation. The list is ordered by arrival and is completed in that order.
+- **Persistence**: start time and every recorded arrival are written to the database immediately, so a crash, closed window or power cut loses nothing.
+- Optional later phase: connect a second device to a local server to enter bibs of the first finishers during the race (see roadmap, phase 9).
+
+### 2.5 Rankings and results
+- Automatic ranking with time, real speed (km/h) and **% of VMA**.
+  - `speed = distance_km / time_h`
+  - `vma_percent = speed / vma * 100`
+- Podium view for the top 3.
+- **Filtered rankings** by condition: sex, establishment, class, etc. (combinable).
+- Special statuses: **DNF** (did not finish), **DNS** (did not start), **DSQ** (disqualified). They are listed after the ranked finishers and have no rank.
+- **No ties**: positions come from the arrival order, every finisher has a unique rank.
+- Post-race correction: add, delete or edit arrivals at any time; rankings update instantly.
+- Hide finished races from the main view.
+
+### 2.6 Statistics
+Auto-generated charts:
+- Participants by sex.
+- Participants by establishment.
+- Participants by VMA bracket: **0.5 km/h wide brackets**, arithmetic rounding to the nearest 0.5.
+
+### 2.7 Printing and PDF export (high priority)
+- **Bibs (dossards)**: PDF export for later printing, selectable **by class** and **by establishment**, with **customization before printing** (layout, text, logo, size, etc.).
+- **Results**: PDF export of rankings (general or filtered), also customizable.
+- Other exports (start lists, Excel/CSV results) are nice-to-have, see roadmap.
+
+---
+
+## 3. Data model (draft)
+
+- `event(id, name, date, location, created_at)`
+- `participant(id, event_id, last_name, first_name, sex, class, establishment, birth_date_or_age, vma, bib)`
+  - unique key for duplicates: `(event_id, last_name, first_name)` (normalized, case/accents insensitive)
+  - `bib` unique per event
+- `race(id, event_id, name, distance_m, vma_min, vma_max, status, started_at, hidden)`
+- `race_entry(id, race_id, participant_id, status)`  -- status: `registered | DNS | DNF | DSQ | finished`
+- `arrival(id, race_id, position, elapsed_ms, participant_id NULL until bib is entered)`
+  - `elapsed_ms` is computed from a monotonic clock stored with the persisted start timestamp
+
+To be refined when phase 1 starts.
+
+---
+
+## 4. Conventions
+
+- Python: PEP 8, type hints where useful, one module per domain (`events`, `participants`, `importer`, `races`, `timing`, `rankings`, `stats`, `exports`).
+- Frontend: plain ES modules, one file per screen; no global mutable state outside a small store module.
+- All DB access goes through the Python backend; the frontend never touches SQLite directly.
+- Every destructive action (delete event, delete race, clear results) needs a confirmation.
+- French UI strings centralized in one place to ease later changes.
+- Keep it simple: no framework, no dependency that complicates the PyInstaller build.
+
+Suggested layout:
+
+```
+crossly/
+  CLAUDE.md
+  main.py              # pywebview entry point, JS API
+  backend/             # domain modules + db.py + schema.sql
+  frontend/            # index.html, css/, js/, assets/
+  templates/           # participants import template (.xlsx)
+  build/               # PyInstaller spec
+```
+
+---
+
+## 5. Roadmap (deliverable phases)
+
+Each phase ends with something usable and manually verified.
+
+**Phase 0 - Foundations**
+App skeleton: pywebview window, Python backend bridge, SQLite schema + migrations, navigation shell, local-assets-only frontend. Verify it also runs once packaged with PyInstaller (do this early to avoid late surprises).
+
+**Phase 1 - Events**
+Create / edit / delete events, event selection screen, event export / import (backup and transfer).
+
+**Phase 2 - Participants**
+Manual add / edit / delete, search and filters, automatic and manual bib assignment.
+
+**Phase 3 - Import**
+CSV and Excel import, downloadable template, flexible column detection, preview, duplicate detection (last name + first name), name normalization, establishment applied to whole list, no-VMA handling.
+
+**Phase 4 - Races**
+Race creation (distance, informative VMA range), registration, quick add by combined filters, individual add.
+
+**Phase 5 - Live timing**
+Persistent stopwatch (start / pause / resume / finish), one-click arrivals with undo, crash recovery.
+
+**Phase 6 - Bib entry and rankings**
+Bib entry by position with participant lookup, DNF / DNS / DSQ handling, ranking with time / speed / % VMA, podium, filtered rankings, post-race corrections, hide finished races.
+
+**Phase 7 - PDF export (bibs and results)**
+Bib PDF by class / establishment with pre-print customization; results PDF (general and filtered) with customization.
+
+**Phase 8 - Statistics**
+Sex, establishment and VMA-bracket (0.5) charts.
+
+**Phase 9 - Packaging**
+Single-file Windows executable, app icon, clean first launch, data folder location, final manual test on a clean PC.
+
+**Phase 10 - Optional: multi-device bib entry**
+Local server on the network, second device (phone / tablet / laptop) enters bibs of first finishers during the race, sync with the main PC. Scope and security to be defined before starting.
+
+**Later ideas (not scheduled)**
+Excel / CSV export of results, start lists, diplomas, team (establishment) ranking.
+
+---
+
+## 6. Open questions
+
+- PDF engine: ReportLab (precise layout, extra dependency) vs HTML print (simpler, depends on webview rendering)?
+- Event backup format: raw SQLite file copy vs JSON export?
+- Single database for all events, or one database file per event?
+- Exact bib customization options (fields, size, logo, number of bibs per page)?
+- Exact filter fields available for rankings (sex, establishment, class only, or also VMA bracket / age category)?
+- Where is the data file stored (next to the exe, or in the user's AppData)?
+- Official class/level naming to support in the import template?
