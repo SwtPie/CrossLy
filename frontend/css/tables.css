@@ -1,0 +1,77 @@
+/* Select inputs and checkbox fields (forms) */
+.field select {
+  font: inherit;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+}
+.field select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+.field.checkbox { display: flex; align-items: flex-start; gap: 10px; }
+.field.checkbox input { margin-top: 3px; }
+.field.checkbox span { font-weight: 400; }
+/* Long forms (participant) scroll inside the dialog instead of overflowing the window */
+.modal { max-height: 92vh; overflow: auto; }
+
+/* Filter bar */
+.filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.filters input[type="search"],
+.filters select {
+  font: inherit;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+}
+.filters input[type="search"] { flex: 1 1 260px; min-width: 200px; }
+.filters input:focus, .filters select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+.summary { margin: 0 0 12px; font-size: 0.9rem; color: var(--muted); }
+.summary strong { color: var(--text); }
+
+/* Data table */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: auto;
+}
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th,
+.data-table td { padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.data-table tbody tr:last-child td { border-bottom: 0; }
+.data-table tbody tr:hover { background: #f8fafc; }
+.data-table th {
+  position: sticky;
+  top: 0;
+  background: #f1f4f8;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+  padding: 0;
+}
+.data-table th button {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.data-table th button:hover { color: var(--text); }
+.data-table th button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.data-table th.actions-col { padding: 10px 14px; }
+.data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table .bib { font-weight: 700; font-variant-numeric: tabular-nums; }
+.data-table .dash { color: var(--muted); }
+.data-table td.actions { text-align: right; width: 1%; }
+.data-table td.actions .btn { margin-left: 4px; }

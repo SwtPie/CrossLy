@@ -29,25 +29,35 @@ CrossLy.screens.events = async function render() {
   ];
 
   async function createEvent() {
-    const values = await formDialog({ title: S.createTitle, fields, submitLabel: CrossLy.strings.common.create });
+    let created = null;
+    const values = await formDialog({
+      title: S.createTitle,
+      fields,
+      submitLabel: CrossLy.strings.common.create,
+      onSubmit: async (v) => {
+        created = await CrossLy.api.call("create_event", v.name, v.date, v.location);
+      },
+    });
     if (!values) return;
-    try {
-      const created = await CrossLy.api.call("create_event", values.name, values.date, values.location);
-      CrossLy.app.setEvent(created);
-      toast(S.created);
-      await refresh();
-    } catch (err) { fail(err); }
+    CrossLy.app.setEvent(created);
+    toast(S.created);
+    await refresh();
   }
 
   async function editEvent(ev) {
-    const values = await formDialog({ title: S.editTitle, fields, initial: ev });
+    let updated = null;
+    const values = await formDialog({
+      title: S.editTitle,
+      fields,
+      initial: ev,
+      onSubmit: async (v) => {
+        updated = await CrossLy.api.call("update_event", ev.file, v.name, v.date, v.location);
+      },
+    });
     if (!values) return;
-    try {
-      const updated = await CrossLy.api.call("update_event", ev.file, values.name, values.date, values.location);
-      if (state.eventFile === ev.file) CrossLy.app.setEvent(updated);
-      toast(S.updated);
-      await refresh();
-    } catch (err) { fail(err); }
+    if (state.eventFile === ev.file) CrossLy.app.setEvent(updated);
+    toast(S.updated);
+    await refresh();
   }
 
   async function deleteEvent(ev) {

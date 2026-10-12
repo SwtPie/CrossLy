@@ -105,9 +105,14 @@ window.CrossLy = window.CrossLy || {};
     });
   }
 
-  // fields: [{name, label, type = "text", required, placeholder}]
-  // Resolves with {name: trimmedValue, ...}, or null when cancelled.
-  function formDialog({ title, fields, initial = {}, submitLabel }) {
+  // fields: [{name, label, type = "text" | "number" | "date" | "select" | "checkbox",
+  //           required, placeholder, options (select), suggestions (datalist), min, max, step}]
+  // Resolves with {name: trimmedValue, ...} (a boolean for checkboxes), or null when cancelled.
+  // intro: optional paragraph above the fields.
+  // onSubmit(values): optional async step run on submit (typically the backend call).
+  // If it throws, the message is shown in the dialog and the dialog stays open,
+  // so a rejected entry (duplicate, invalid value...) is never lost.
+  function formDialog({ title, fields, initial = {}, submitLabel, intro, onSubmit }) {
     const S = CrossLy.strings.common;
     return new Promise((resolve) => {
       const error = h("p", { class: "form-error", hidden: true });
@@ -115,31 +120,69 @@ window.CrossLy = window.CrossLy || {};
       const form = h(
         "form",
         { class: "form", novalidate: true },
+        intro && h("p", { class: "modal-text muted" }, intro),
         fields.map((f) => {
-          inputs[f.name] = h("input", {
-            id: `field-${f.name}`,
-            name: f.name,
-            type: f.type || "text",
-            placeholder: f.placeholder || "",
-            value: initial[f.name] || "",
-            autocomplete: "off",
-          });
-          return h("label", { class: "field", for: `field-${f.name}` },
-            h("span", {}, f.label, f.required ? " *" : ""), inputs[f.name]);
+          const id = `field-${f.name}`;
+          const start = initial[f.name] ?? "";
+          let datalist = null;
+          if (f.type === "select") {
+            inputs[f.name] = h("select", { id, name: f.name },
+              f.options.map((o) =>
+                h("option", { value: o.value, selected: String(o.value) === String(start) }, o.label)));
+          } else if (f.type === "checkbox") {
+            inputs[f.name] = h("input", { id, name: f.name, type: "checkbox", checked: Boolean(start) });
+          } else {
+            const listId = f.suggestions && f.suggestions.length ? `list-${f.name}` : null;
+            inputs[f.name] = h("input", {
+              id,
+              name: f.name,
+              type: f.type || "text",
+              placeholder: f.placeholder || "",
+              value: start,
+              autocomplete: "off",
+              list: listId,
+              min: f.min,
+              max: f.max,
+              step: f.step,
+              inputmode: f.inputmode,
+            });
+            if (listId) {
+              datalist = h("datalist", { id: listId }, f.suggestions.map((s) => h("option", { value: s })));
+            }
+          }
+          if (f.type === "checkbox") {
+            return h("label", { class: "field checkbox", for: id }, inputs[f.name], h("span", {}, f.label));
+          }
+          return h("label", { class: "field", for: id },
+            h("span", {}, f.label, f.required ? " *" : ""), inputs[f.name], datalist);
         }),
         error
       );
 
-      function submit(close) {
+      let busy = false;
+      async function submit(close) {
+        if (busy) return;
         const values = {};
         for (const f of fields) {
-          values[f.name] = inputs[f.name].value.trim();
+          values[f.name] = f.type === "checkbox" ? inputs[f.name].checked : inputs[f.name].value.trim();
           if (f.required && !values[f.name]) {
             error.textContent = `${f.label} : ${S.fieldRequired}`;
             error.hidden = false;
             inputs[f.name].focus();
             return;
           }
+        }
+        if (onSubmit) {
+          busy = true;
+          try {
+            await onSubmit(values);
+          } catch (err) {
+            error.textContent = err.message || CrossLy.strings.errors.generic;
+            error.hidden = false;
+            busy = false;
+            return;
+          }
+          busy = false;
         }
         close();
         resolve(values);

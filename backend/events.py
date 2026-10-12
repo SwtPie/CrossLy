@@ -33,7 +33,7 @@ def _clean_fields(name: str, date: str, location: str) -> tuple[str, str, str]:
     return name, date, location
 
 
-def _existing_path(event_file: str) -> Path:
+def existing_event_path(event_file: str) -> Path:
     path = db.event_path(event_file)
     if not path.is_file():
         raise ValueError(messages.EVENT_NOT_FOUND)
@@ -45,7 +45,7 @@ def list_events() -> list[dict]:
 
 
 def get_event(event_file: str) -> dict:
-    return db.read_event_meta(_existing_path(event_file))
+    return db.read_event_meta(existing_event_path(event_file))
 
 
 def create_event(name: str, date: str = "", location: str = "") -> dict:
@@ -56,7 +56,7 @@ def create_event(name: str, date: str = "", location: str = "") -> dict:
 
 def update_event(event_file: str, name: str, date: str = "", location: str = "") -> dict:
     name, date, location = _clean_fields(name, date, location)
-    path = _existing_path(event_file)
+    path = existing_event_path(event_file)
     with db.connect(path) as conn:
         conn.executemany(
             "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
@@ -66,7 +66,7 @@ def update_event(event_file: str, name: str, date: str = "", location: str = "")
 
 
 def delete_event(event_file: str) -> None:
-    path = _existing_path(event_file)
+    path = existing_event_path(event_file)
     # WAL mode may leave sidecar files next to the database.
     for candidate in (path, Path(f"{path}-wal"), Path(f"{path}-shm")):
         candidate.unlink(missing_ok=True)
@@ -80,7 +80,7 @@ def suggested_export_name(event_file: str) -> str:
 
 def export_event(event_file: str, destination: str) -> str:
     """Write a consistent, single-file copy of an event to `destination`."""
-    source = _existing_path(event_file)
+    source = existing_event_path(event_file)
     dest = Path(destination)
     if dest.suffix.lower() != ".db":
         dest = dest.with_name(dest.name + ".db")

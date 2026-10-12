@@ -47,7 +47,10 @@ Constraints:
   - **Establishment field** applied to a whole imported list in one operation.
   - Participants **without VMA** are imported as-is (VMA stays empty, nothing is inferred).
 - Bib numbers: automatic assignment in one click, or manual.
-- Real-time search and filtering.
+  - **Automatic**: only participants without a bib are numbered, in order of establishment, then class, then last name / first name (no establishment last). Numbering starts at a chosen number (default 1) and skips numbers already in use. An option renumbers everyone from scratch (with a confirmation, since bibs may already be printed). A separate action clears all bibs.
+  - **Manual**: typed in the participant form; a bib is unique within the event and the app names the participant who already has it.
+- Fields and validation (manual add / edit): last name and first name required; sex `M` / `F` (shown as Garçon / Fille) or empty; class normalized to `6X` when it matches the pattern, kept as typed otherwise; establishment free text; birth date (ISO, not in the future) and/or plain age (3-99); VMA 5-30 km/h (comma or dot); bib 1-99999. Two participants cannot share the same last name + first name (accent and case insensitive).
+- Real-time search and filtering (client side, accent and case insensitive): free text over name, first name, class, establishment and bib; filters on sex, class, establishment and bib status; sortable columns.
 
 ### 2.3 Races
 - Unlimited number of races per event.
@@ -139,12 +142,13 @@ Each phase ends with something usable and manually verified.
 **Phase 0 - Foundations** (done, validated)
 App skeleton: pywebview window, Python backend bridge, SQLite schema + migrations, navigation shell, local-assets-only frontend. PyInstaller packaging is **not** a priority here: it is deferred to phase 9. Keep the code packaging-friendly anyway (no data files read from the source tree except through `backend/paths.py`, migrations stored as Python strings).
 
-**Phase 1 - Events** (implemented, awaiting validation)
+**Phase 1 - Events** (done, validated)
 Create / edit / delete events, event selection screen, event export / import (backup and transfer).
 Notes: export uses the SQLite backup API (consistent single file, even in WAL mode) through a native save dialog; import validates and migrates the file in a temporary location, then stores it under a fresh file name (so importing the same backup twice creates two events). Renaming an event changes its name, not its file name. Deleting asks for confirmation and removes the file. Messages the backend shows to the user are French and live in `backend/messages.py`.
 
-**Phase 2 - Participants**
+**Phase 2 - Participants** (implemented, awaiting validation)
 Manual add / edit / delete, search and filters, automatic and manual bib assignment.
+Notes: class normalization (`backend/normalize.py`) is already in place and will be reused by the import in phase 3. Forms keep the dialog open when the backend rejects an entry (duplicate, bib already taken...), so nothing typed is lost. Deleting a participant removes their registrations but keeps recorded arrival times without a name.
 
 **Phase 3 - Import**
 CSV and Excel import, downloadable template, flexible column detection, preview, duplicate detection (last name + first name), name normalization, establishment applied to whole list, no-VMA handling.

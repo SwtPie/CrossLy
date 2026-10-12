@@ -14,3 +14,22 @@ EVENT_FILE_TOO_NEW = (
     "Mettez le logiciel à jour pour l'ouvrir."
 )
 EXPORT_SAME_FILE = "Choisissez un emplacement en dehors du dossier de données de CrossLy."
+
+LAST_NAME_REQUIRED = "Le nom est obligatoire."
+FIRST_NAME_REQUIRED = "Le prénom est obligatoire."
+PERSON_NAME_TOO_LONG = "Le nom, le prénom, la classe et l'établissement sont limités à 80 caractères."
+SEX_INVALID = "Le sexe doit être « Garçon » ou « Fille »."
+BIRTH_DATE_INVALID = "La date de naissance est invalide."
+AGE_INVALID = "L'âge doit être un nombre entier entre 3 et 99."
+VMA_INVALID = "La VMA doit être un nombre entre 5 et 30 km/h."
+BIB_INVALID = "Le dossard doit être un nombre entier entre 1 et 99999."
+BIB_START_INVALID = "Le numéro de départ doit être un nombre entier entre 1 et 99999."
+PARTICIPANT_NOT_FOUND = "Ce participant est introuvable."
+
+
+def participant_duplicate(last_name: str, first_name: str) -> str:
+    return f"{last_name} {first_name} est déjà inscrit(e) dans cet événement."
+
+
+def bib_taken(bib: int, owner: str) -> str:
+    return f"Le dossard {bib} est déjà attribué à {owner}."

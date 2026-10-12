@@ -12,7 +12,7 @@ arguments and delegates.
 import functools
 import traceback
 
-from . import APP_NAME, APP_VERSION, events
+from . import APP_NAME, APP_VERSION, events, participants
 from .paths import data_dir
 
 EVENT_FILE_TYPES = ("Événement CrossLy (*.db)",)
@@ -102,3 +102,30 @@ class Api:
         if not source:
             return {"cancelled": True}
         return events.import_event(source)
+
+    # --- participants ---------------------------------------------------
+
+    @_safe
+    def list_participants(self, event_file: str) -> list[dict]:
+        return participants.list_participants(event_file)
+
+    @_safe
+    def add_participant(self, event_file: str, data: dict) -> dict:
+        return participants.add_participant(event_file, data)
+
+    @_safe
+    def update_participant(self, event_file: str, participant_id: int, data: dict) -> dict:
+        return participants.update_participant(event_file, participant_id, data)
+
+    @_safe
+    def delete_participant(self, event_file: str, participant_id: int) -> dict:
+        participants.delete_participant(event_file, participant_id)
+        return {"deleted": True}
+
+    @_safe
+    def assign_bibs(self, event_file: str, start: int = 1, renumber_all: bool = False) -> dict:
+        return participants.assign_bibs(event_file, start, renumber_all)
+
+    @_safe
+    def clear_bibs(self, event_file: str) -> dict:
+        return participants.clear_bibs(event_file)

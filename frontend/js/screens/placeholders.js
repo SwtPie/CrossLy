@@ -12,7 +12,7 @@ CrossLy.screens = CrossLy.screens || {};
     };
   }
 
-  for (const key of ["participants", "races", "timing", "results", "stats"]) {
+  for (const key of ["races", "timing", "results", "stats"]) {
     CrossLy.screens[key] = placeholder();
   }
 })();
