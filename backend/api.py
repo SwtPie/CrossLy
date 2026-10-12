@@ -12,10 +12,12 @@ arguments and delegates.
 import functools
 import traceback
 
-from . import APP_NAME, APP_VERSION, events, participants
+from . import APP_NAME, APP_VERSION, events, importer, messages, participants
 from .paths import data_dir
 
 EVENT_FILE_TYPES = ("Événement CrossLy (*.db)",)
+IMPORT_FILE_TYPES = ("Fichiers de participants (*.csv;*.xlsx)", "Tous les fichiers (*.*)")
+TEMPLATE_FILE_TYPES = ("Classeur Excel (*.xlsx)",)
 
 
 def _safe(method):
@@ -55,6 +57,11 @@ def _file_dialog(kind: str, **options) -> str | None:
 
 
 class Api:
+    def __init__(self) -> None:
+        # File being imported (headers + rows). Kept here, not sent back and forth,
+        # so the frontend never handles file paths. The underscore keeps it private.
+        self._import_table: dict | None = None
+
     @_safe
     def app_info(self) -> dict:
         return {
@@ -129,3 +136,56 @@ class Api:
     @_safe
     def clear_bibs(self, event_file: str) -> dict:
         return participants.clear_bibs(event_file)
+
+    # --- participant import ---------------------------------------------
+
+    def _require_import_table(self) -> dict:
+        if self._import_table is None:
+            raise ValueError(messages.IMPORT_NO_FILE)
+        return self._import_table
+
+    @_safe
+    def import_open_file(self, event_file: str) -> dict:
+        """Ask for a .csv / .xlsx file, read it, and return columns + a first preview."""
+        events.get_event(event_file)  # fail early on an unknown event
+        source = _file_dialog("open", file_types=IMPORT_FILE_TYPES)
+        if not source:
+            return {"cancelled": True}
+        table = importer.read_table(source)
+        self._import_table = table
+        mapping = importer.detect_mapping(table["headers"])
+        options = importer.default_options(table["headers"])
+        return {
+            "file_name": table["file_name"],
+            "sheet": table["sheet"],
+            "headers": table["headers"],
+            "row_count": len(table["rows"]),
+            "mapping": mapping,
+            "options": options,
+            "preview": importer.preview(event_file, table, mapping, options, {}),
+        }
+
+    @_safe
+    def import_preview(self, event_file: str, mapping: dict, options: dict | None = None,
+                       overrides: dict | None = None) -> dict:
+        return importer.preview(event_file, self._require_import_table(), mapping, options, overrides)
+
+    @_safe
+    def import_commit(self, event_file: str, mapping: dict, options: dict | None = None,
+                      overrides: dict | None = None) -> dict:
+        result = importer.commit(event_file, self._require_import_table(), mapping, options, overrides)
+        self._import_table = None
+        return result
+
+    @_safe
+    def import_discard(self) -> dict:
+        self._import_table = None
+        return {"discarded": True}
+
+    @_safe
+    def import_template(self) -> dict:
+        destination = _file_dialog("save", save_filename=importer.TEMPLATE_NAME,
+                                   file_types=TEMPLATE_FILE_TYPES)
+        if not destination:
+            return {"cancelled": True}
+        return {"path": importer.write_template(destination)}

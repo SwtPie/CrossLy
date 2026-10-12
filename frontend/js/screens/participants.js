@@ -139,6 +139,30 @@ CrossLy.screens = CrossLy.screens || {};
       } catch (err) { fail(err); }
     }
 
+    // --- import -------------------------------------------------------------
+
+    async function importFile() {
+      try {
+        const data = await CrossLy.api.call("import_open_file", eventFile);
+        if (data.cancelled) return;
+        CrossLy.participantsImport.open(eventFile, data, {
+          establishments: distinct(participants, "establishment"),
+        });
+      } catch (err) { fail(err); }
+    }
+
+    async function downloadTemplate() {
+      try {
+        const result = await CrossLy.api.call("import_template");
+        if (!result.cancelled) toast(`${CrossLy.strings.importer.templateSaved} ${result.path}`);
+      } catch (err) { fail(err); }
+    }
+
+    const importButtons = () => [
+      h("button", { class: "btn", onclick: importFile }, CrossLy.strings.importer.button),
+      h("button", { class: "btn ghost", onclick: downloadTemplate }, CrossLy.strings.importer.template),
+    ];
+
     // --- bibs ---------------------------------------------------------------
 
     async function assignBibs() {
@@ -193,7 +217,8 @@ CrossLy.screens = CrossLy.screens || {};
       mount(
         h("div", {},
           h("div", { class: "toolbar" },
-            h("button", { class: "btn primary", onclick: addParticipant }, S.add)),
+            h("button", { class: "btn primary", onclick: addParticipant }, S.add),
+            importButtons()),
           h("div", { class: "card empty" },
             h("p", {}, S.empty),
             h("p", { class: "muted" }, S.emptyHint)))
@@ -292,6 +317,7 @@ CrossLy.screens = CrossLy.screens || {};
       h("div", {},
         h("div", { class: "toolbar" },
           h("button", { class: "btn primary", onclick: addParticipant }, S.add),
+          importButtons(),
           h("button", { class: "btn", onclick: assignBibs }, S.assignBibs),
           withBib > 0 && h("button", { class: "btn ghost", onclick: clearBibs }, S.clearBibs)),
         h("div", { class: "filters" }, searchInput, sexSelect, classSelect, estSelect, bibSelect, resetButton),

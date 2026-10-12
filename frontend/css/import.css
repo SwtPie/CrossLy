@@ -1,0 +1,84 @@
+/* Import wizard */
+.import-step { margin-bottom: 16px; }
+.import-step h2 { margin: 0 0 6px; font-size: 1.05rem; }
+.import-step .hint { margin: 0 0 14px; color: var(--muted); font-size: 0.9rem; }
+.import-file { margin: 0 0 16px; }
+.import-file strong { font-weight: 600; }
+
+.import-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px 16px;
+}
+.import-options { margin-top: 14px; }
+
+/* Summary chips */
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+.chip {
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #eef1f5;
+  color: var(--muted);
+}
+.chip.ok { background: #e3f4e8; color: #19703a; }
+.chip.warning { background: #fff2d6; color: #8a5a00; }
+.chip.duplicate { background: #e9ecf0; color: #4b5663; }
+.chip.error { background: #fbeaea; color: var(--danger); }
+
+.notice {
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 0 0 12px;
+  font-size: 0.925rem;
+}
+.notice.error { background: #fbeaea; color: var(--danger); border: 1px solid #f0c4c4; }
+
+/* Preview table: compact cells, remarks on a line of their own under the row */
+.import-table th,
+.import-table td { padding: 8px 10px; }
+.import-table tr.status-duplicate td,
+.import-table tr.status-error td { color: var(--muted); }
+.import-table tr.note-row td { padding: 0 10px 8px 62px; white-space: normal; border-bottom: 1px solid var(--border); }
+.import-table tr.note-row:hover { background: transparent; }
+.import-table tr.note-row .note { font-size: 0.85rem; color: #8a5a00; }
+.import-table tr.status-error.note-row .note { color: var(--danger); }
+.import-table tr.status-duplicate.note-row .note { color: var(--muted); }
+/* The row and its remark read as one block: no rule between them */
+.import-table tr:has(+ tr.note-row) td { border-bottom: 0; }
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 1px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.badge.ok { background: #e3f4e8; color: #19703a; }
+.badge.warning { background: #fff2d6; color: #8a5a00; }
+.badge.duplicate { background: #e9ecf0; color: #4b5663; }
+.badge.error { background: #fbeaea; color: var(--danger); }
+.cell-input {
+  font: inherit;
+  width: 5.5em;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--text);
+}
+.cell-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+.import-table-wrap { max-height: 55vh; }
+
+/* Action bar stays visible while scrolling a long preview */
+.import-actions {
+  position: sticky;
+  bottom: -24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 16px -28px -24px;
+  padding: 14px 28px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}

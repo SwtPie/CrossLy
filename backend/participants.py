@@ -144,18 +144,29 @@ def list_participants(event_file: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def identity_keys(conn: sqlite3.Connection) -> set[tuple[str, str]]:
+    """Normalized (last name, first name) pairs already registered (duplicate detection)."""
+    rows = conn.execute("SELECT last_name_key, first_name_key FROM participant").fetchall()
+    return {(r["last_name_key"], r["first_name_key"]) for r in rows}
+
+
+def insert_participant(conn: sqlite3.Connection, values: dict) -> int:
+    """Insert already-validated values (see `clean_participant`); returns the new id."""
+    cursor = conn.execute(
+        "INSERT INTO participant (last_name, first_name, last_name_key, first_name_key, "
+        "sex, class, establishment, birth_date, age, vma, bib) "
+        "VALUES (:last_name, :first_name, :last_name_key, :first_name_key, "
+        ":sex, :class, :establishment, :birth_date, :age, :vma, :bib)",
+        values,
+    )
+    return cursor.lastrowid
+
+
 def add_participant(event_file: str, data: dict) -> dict:
     values = clean_participant(data)
     with db.connect(existing_event_path(event_file)) as conn:
         _check_unique(conn, values, None)
-        cursor = conn.execute(
-            "INSERT INTO participant (last_name, first_name, last_name_key, first_name_key, "
-            "sex, class, establishment, birth_date, age, vma, bib) "
-            "VALUES (:last_name, :first_name, :last_name_key, :first_name_key, "
-            ":sex, :class, :establishment, :birth_date, :age, :vma, :bib)",
-            values,
-        )
-        return _row(conn, cursor.lastrowid)
+        return _row(conn, insert_participant(conn, values))
 
 
 def update_participant(event_file: str, participant_id: int, data: dict) -> dict:
